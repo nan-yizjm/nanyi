@@ -9,6 +9,8 @@ class RMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(dim))
 
     def _norm(self, x: torch.Tensor) -> torch.Tensor:
+        # x的形状是 [batch_size, seq_len, dim]
+        # 核心计算：x * (x^2的均值 + eps)的平方根的倒数
         return x * torch.rsqrt(x.pow(2).mean(dim=-1, keepdim=True) + self.eps)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

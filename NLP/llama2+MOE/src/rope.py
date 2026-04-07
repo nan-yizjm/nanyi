@@ -2,9 +2,15 @@ import torch
 
 
 def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0) -> torch.Tensor:
+    # 1. 计算频率：1 / (theta^(2i/dim))
     freqs = 1.0 / (theta ** (torch.arange(0, dim, 2)[: (dim // 2)].float() / dim))
+    # 2. 生成位置序列 t = [0, 1, ..., end-1]
     t = torch.arange(end, device=freqs.device)
+    # 3. 计算相位：t 和 freqs 的外积
     freqs = torch.outer(t, freqs).float()
+    # 4. 转换为复数形式 (cos(theta) + i*sin(theta))
+    # freqs的形状为 (end, dim//2)，每个元素是一个实数频率值。我们使用 torch.polar 将这些实数频率转换为复数形式，其中实部为 cos(freqs)，虚部为 sin(freqs)。
+    # polar函数的第一个参数是幅度，这里我们设置为1（即不改变频率的幅度），第二个参数是相位，即 freqs 中的值。结果 freqs_cis 的形状仍然是 (end, dim//2)，但每个元素现在是一个复数，表示旋转的相位。
     freqs_cis = torch.polar(torch.ones_like(freqs), freqs)
     return freqs_cis
 
