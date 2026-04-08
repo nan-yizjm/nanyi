@@ -16,7 +16,9 @@ def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0) -> torch.Te
 
 
 def reshape_for_broadcast(freqs_cis: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
-    ndim = x.ndim
+    # x的形状为[批次大小, 序列长度, 注意力头数, 维度]
+    # freqs_cis的形状为[序列长度, 维度//2]
+    ndim = x.ndim   # ndim = 4
     shape = [d if i == 1 or i == ndim - 1 else 1 for i, d in enumerate(x.shape)]
     return freqs_cis.view(*shape)
 
@@ -28,12 +30,13 @@ def apply_rotary_emb(
 ) -> tuple[torch.Tensor, torch.Tensor]:
     # 允许 GQA：Q/K 头数可不同，但最后一维 head_dim 应一致
     head_dim = xq.shape[-1]
-
+    # 将 Q/K 向量视为复数
     xq_ = torch.view_as_complex(xq.float().reshape(*xq.shape[:-1], -1, 2))
     xk_ = torch.view_as_complex(xk.float().reshape(*xk.shape[:-1], -1, 2))
     # 分别对 Q/K 广播以兼容不同头数
     freqs_q = reshape_for_broadcast(freqs_cis, xq_)
     freqs_k = reshape_for_broadcast(freqs_cis, xk_)
+    # 复数乘法即为旋转
     xq_out = torch.view_as_real(xq_ * freqs_q).flatten(3)
     xk_out = torch.view_as_real(xk_ * freqs_k).flatten(3)
     return xq_out.type_as(xq), xk_out.type_as(xq)
