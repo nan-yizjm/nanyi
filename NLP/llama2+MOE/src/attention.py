@@ -31,6 +31,7 @@ class GroupedQueryAttention(nn.Module):
         self.wv = nn.Linear(dim, self.n_local_kv_heads * self.head_dim, bias=False)
         self.wo = nn.Linear(self.n_local_heads * self.head_dim, dim, bias=False)
 
+        # 注册 KV 缓存 (KV Cache)，用于存储推理过程中的键和值
         self.register_buffer(
             "cache_k",
             torch.zeros(

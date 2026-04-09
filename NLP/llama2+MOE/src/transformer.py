@@ -52,6 +52,7 @@ class TransformerBlock(nn.Module):
         freqs_cis: torch.Tensor,
         mask: Optional[torch.Tensor],
     ) -> torch.Tensor:
+        # 预归一化(先 RMSNorm，再送入 attention 或 feed_forward) + 残差连接
         h = x + self.attention(self.attention_norm(x), start_pos, freqs_cis, mask)
         out = h + self.feed_forward(self.ffn_norm(h))
         return out
@@ -107,14 +108,19 @@ class LlamaTransformer(nn.Module):
         bsz, seqlen = tokens.shape
         h = self.tok_embeddings(tokens)
         self.freqs_cis = self.freqs_cis.to(h.device)
+        # 1. 准备 RoPE 旋转矩阵
         freqs_cis = self.freqs_cis[start_pos : start_pos + seqlen]
 
+        # 2. 准备因果掩码 (Causal Mask)
         mask = None
         if seqlen > 1:
             mask = torch.full((seqlen, seqlen), float("-inf"), device=tokens.device)
+            # 取上三角部分（对角线右上方），形成一个“禁止看未来”的三角掩码
             mask = torch.triu(mask, diagonal=1)
+            # 考虑 KV Cache 的偏移
             mask = torch.hstack([torch.zeros((seqlen, start_pos), device=tokens.device), mask]).type_as(h)
 
+        # 3. 循环通过所有 TransformerBlock
         for layer in self.layers:
             h = layer(h, start_pos, freqs_cis, mask)
         h = self.norm(h)

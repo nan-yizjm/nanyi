@@ -5,7 +5,8 @@ from typing import Optional
 
 
 class FeedForward(nn.Module):
-    def __init__(self, dim: int, hidden_dim: int, multiple_of: int, ffn_dim_multiplier: Optional[float]):
+    def __init__(self, dim: int, hidden_dim: int, multiple_of: int, ffn_dim_multiplier: Optional[float]): 
+        # hidden_dim 是原始的 FFN 隐藏层维度，multiple_of 是为了确保维度是某个数的倍数，ffn_dim_multiplier 是一个可选的乘数，用于调整隐藏层维度
         super().__init__()
         hidden_dim = int(2 * hidden_dim / 3)
         if ffn_dim_multiplier is not None:
@@ -22,6 +23,7 @@ class FeedForward(nn.Module):
 
 class MoE(nn.Module):
     def __init__(self, dim: int, hidden_dim: int, multiple_of: int, ffn_dim_multiplier: Optional[float], num_experts: int = 8, top_k: int = 2):
+        # num_experts 是专家的数量，top_k 是每个 token 选择的专家数量
         super().__init__()
         self.num_experts = num_experts
         self.top_k = top_k
